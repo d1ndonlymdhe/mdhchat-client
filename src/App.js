@@ -44,75 +44,140 @@ export default function App() {
   );
 }
 
-function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
-  const handleSubmit = (e) => {
-    if (!(username == "username" || username == "")) {
-      e.preventDefault();
-      if (roomCode == 0 || roomCode == "") {
-        socket.emit("create", username);
-      } else {
-        console.log("join signal sent");
-        socket.emit("join", username, roomCode);
-      }
-    }
-  };
-  const isString = (str) => {
-    if (str.length > 4) {
-      return true;
-    }
-    const strArr = str.split("");
-    for (let i = 0; i < str.length; i++) {
-      if (
-        !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(strArr[i])
-      ) {
-        return true;
-      }
-    }
-    return false;
-  };
+function StartPage({}) {
+  const [login, setLogin] = useState(false);
+  const [signUp, setSignUp] = useState(false);
   return (
-    <div id="mainContainer">
+    <>
+      {/* {login || <Login></Login>} */}
+      {!signUp || <SignUp></SignUp>}
       <Title></Title>
+      <button
+        onClick={() => {
+          setLogin(true);
+          setSignUp(false);
+        }}
+      >
+        LOGIN
+      </button>
       <br />
-      <div className="form">
-        <form onSubmit={handleSubmit} id="inputForm">
-          <input
-            type="text"
-            id="usernameInput"
-            autoComplete="off"
-            className="input"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => {
-              setUserName(e.target.value);
-            }}
-            onFocus={(e) => {
-              e.target.value = "";
-            }}
-          />
-          <br />
-          <input
-            type="text"
-            id="roomCodeInput"
-            className="input"
-            autoComplete="off"
-            value={roomCode}
-            placeholder="Room Code"
-            onChange={(e) => {
-              if (isString(e.target.value)) {
-                return false;
-              }
-              setRoomCode(e.target.value);
-            }}
-            onFocus={(e) => (e.target.value = "")}
-          />
-          <br />
-          <button type="submit">Submit</button>
-        </form>
-      </div>
-    </div>
+      <button
+        onClick={() => {
+          setSignUp(true);
+          setLogin(false);
+        }}
+      >
+        SIGN UP
+      </button>
+    </>
   );
 }
+
+function SignUp() {
+  const usernameInput = useRef(null);
+  const passwordInput = useRef(null);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const username = usernameInput.current.value;
+    const password = passwordInput.current.value;
+    fetch(`http://${server}/signup?u=${username}`).then((res) => {
+      console.log(res);
+    });
+  };
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="username">Username:</label>
+        <input
+          name="username"
+          type="text"
+          autoComplete="off"
+          ref={usernameInput}
+        ></input>
+        <br />
+        <label htmlFor="password">Password:</label>
+        <input
+          name="password"
+          type="password"
+          autoComplete="off"
+          ref={passwordInput}
+        ></input>
+        <br />
+        <button type="submit">submit</button>
+      </form>
+    </>
+  );
+}
+
+// function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
+//   const handleSubmit = (e) => {
+//     if (!(username == "username" || username == "")) {
+//       e.preventDefault();
+//       if (roomCode == 0 || roomCode == "") {
+//         socket.emit("create", username);
+//       } else {
+//         console.log("join signal sent");
+//         socket.emit("join", username, roomCode);
+//       }
+//     }
+//   };
+//   const isString = (str) => {
+//     if (str.length > 4) {
+//       return true;
+//     }
+//     const strArr = str.split("");
+//     for (let i = 0; i < str.length; i++) {
+//       if (
+//         !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(strArr[i])
+//       ) {
+//         return true;
+//       }
+//     }
+//     return false;
+//   };
+//   return (
+//     <div id="mainContainer">
+//       <Title></Title>
+//       <br />
+//       <div className="form">
+//         <form onSubmit={handleSubmit} id="inputForm">
+//           <input
+//             type="text"
+//             id="usernameInput"
+//             autoComplete="off"
+//             className="input"
+//             placeholder="Username"
+//             value={username}
+//             onChange={(e) => {
+//               setUserName(e.target.value);
+//             }}
+//             onFocus={(e) => {
+//               e.target.value = "";
+//             }}
+//           />
+//           <br />
+//           <input
+//             type="text"
+//             id="roomCodeInput"
+//             className="input"
+//             autoComplete="off"
+//             value={roomCode}
+//             placeholder="Room Code"
+//             onChange={(e) => {
+//               if (isString(e.target.value)) {
+//                 return false;
+//               }
+//               setRoomCode(e.target.value);
+//             }}
+//             onFocus={(e) => (e.target.value = "")}
+//           />
+//           <br />
+//           <button type="submit">Submit</button>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// }
 
 function Chat({ socket, roomCode, username }) {
   const string = `room code = ${roomCode}`;
@@ -189,15 +254,10 @@ function Input({ msg, setMsg }) {
         onChange={(e) => setMsg(e.target.value)}
         placeholder="Message"
       ></input>
-      <AnyElem name="div"></AnyElem>
     </div>
   );
 }
 
 function Title() {
   return <div class="title">MDHCHT</div>;
-}
-
-function AnyElem({ id, className, name }) {
-  return React.createElement(name);
 }
