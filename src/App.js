@@ -10,6 +10,8 @@ export default function App() {
   const [roomCode, setRoomCode] = useState("");
   const [roomCreated, setRoomCreated] = useState(false);
   const [roomJoined, setRoomJoined] = useState(false);
+  const [toast, setToast] = useState(true);
+  const [toastMsg, setToastMsg] = useState("");
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
       setRoomCreated(true);
@@ -22,92 +24,80 @@ export default function App() {
       setRoomJoined(true);
       setRoomCode(roomCode);
     });
+    socket.on("newUser", (res) => {
+      setToast(false);
+      setTimeout(() => {
+        setToast(true);
+      }, 100);
+      if (username === res.username) {
+        setToastMsg(`You Joined`);
+      } else {
+        setToastMsg(`${res.username} joined`);
+      }
+    });
     socket.on("error", (msg) => console.log(msg));
   }, [socket]);
 
   if (roomCreated || roomJoined) {
     return (
-      <div id="chat">
-        <Title></Title>
-        <Chat socket={socket} username={username} roomCode={roomCode}></Chat>
-      </div>
+      <>
+        {toast || <Toast msg={toastMsg} toast={toast}></Toast>}
+        <div id="chat">
+          <Title></Title>
+          <Chat socket={socket} username={username} roomCode={roomCode}></Chat>
+        </div>
+      </>
     );
   }
   return (
-    <StartPage
-      socket={socket}
-      username={username}
-      setUserName={setUserName}
-      roomCode={roomCode}
-      setRoomCode={setRoomCode}
-    ></StartPage>
-  );
-}
-
-// function StartPage({}) {
-//   const [login, setLogin] = useState(false);
-//   const [signUp, setSignUp] = useState(false);
-//   return (
-//     <>
-//       {/* {login || <Login></Login>} */}
-//       {!signUp || <SignUp></SignUp>}
-//       <Title></Title>
-//       <button
-//         onClick={() => {
-//           setLogin(true);
-//           setSignUp(false);
-//         }}
-//       >
-//         LOGIN
-//       </button>
-//       <br />
-//       <button
-//         onClick={() => {
-//           setSignUp(true);
-//           setLogin(false);
-//         }}
-//       >
-//         SIGN UP
-//       </button>
-//     </>
-//   );
-// }
-
-function SignUp() {
-  const usernameInput = useRef(null);
-  const passwordInput = useRef(null);
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const username = usernameInput.current.value;
-    const password = passwordInput.current.value;
-    fetch(`http://${server}/signup?u=${username}`).then((res) => {
-      console.log(res);
-    });
-  };
-  return (
     <>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="username">Username:</label>
-        <input
-          name="username"
-          type="text"
-          autoComplete="off"
-          ref={usernameInput}
-        ></input>
-        <br />
-        <label htmlFor="password">Password:</label>
-        <input
-          name="password"
-          type="password"
-          autoComplete="off"
-          ref={passwordInput}
-        ></input>
-        <br />
-        <button type="submit">submit</button>
-      </form>
+      {toast || <Toast msg={toastMsg} toast={toast}></Toast>}
+      <StartPage
+        socket={socket}
+        username={username}
+        setUserName={setUserName}
+        roomCode={roomCode}
+        setRoomCode={setRoomCode}
+      ></StartPage>
     </>
   );
 }
+
+// function SignUp() {
+//   const usernameInput = useRef(null);
+//   const passwordInput = useRef(null);
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     const username = usernameInput.current.value;
+//     const password = passwordInput.current.value;
+//     fetch(`http://${server}/signup?u=${username}`).then((res) => {
+//       console.log(res);
+//     });
+//   };
+//   return (
+//     <>
+//       <form onSubmit={handleSubmit}>
+//         <label htmlFor="username">Username:</label>
+//         <input
+//           name="username"
+//           type="text"
+//           autoComplete="off"
+//           ref={usernameInput}
+//         ></input>
+//         <br />
+//         <label htmlFor="password">Password:</label>
+//         <input
+//           name="password"
+//           type="password"
+//           autoComplete="off"
+//           ref={passwordInput}
+//         ></input>
+//         <br />
+//         <button type="submit">submit</button>
+//       </form>
+//     </>
+//   );
+// }
 
 function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
   const handleSubmit = (e) => {
@@ -260,4 +250,8 @@ function Input({ msg, setMsg }) {
 
 function Title() {
   return <div class="title">MDHCHT</div>;
+}
+
+function Toast({ msg, toast }) {
+  return <div className="toast">{msg}</div>;
 }
