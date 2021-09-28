@@ -44,6 +44,71 @@ export default function App() {
   );
 }
 
+// function StartPage({}) {
+//   const [login, setLogin] = useState(false);
+//   const [signUp, setSignUp] = useState(false);
+//   return (
+//     <>
+//       {/* {login || <Login></Login>} */}
+//       {!signUp || <SignUp></SignUp>}
+//       <Title></Title>
+//       <button
+//         onClick={() => {
+//           setLogin(true);
+//           setSignUp(false);
+//         }}
+//       >
+//         LOGIN
+//       </button>
+//       <br />
+//       <button
+//         onClick={() => {
+//           setSignUp(true);
+//           setLogin(false);
+//         }}
+//       >
+//         SIGN UP
+//       </button>
+//     </>
+//   );
+// }
+
+function SignUp() {
+  const usernameInput = useRef(null);
+  const passwordInput = useRef(null);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const username = usernameInput.current.value;
+    const password = passwordInput.current.value;
+    fetch(`http://${server}/signup?u=${username}`).then((res) => {
+      console.log(res);
+    });
+  };
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="username">Username:</label>
+        <input
+          name="username"
+          type="text"
+          autoComplete="off"
+          ref={usernameInput}
+        ></input>
+        <br />
+        <label htmlFor="password">Password:</label>
+        <input
+          name="password"
+          type="password"
+          autoComplete="off"
+          ref={passwordInput}
+        ></input>
+        <br />
+        <button type="submit">submit</button>
+      </form>
+    </>
+  );
+}
+
 function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
   const handleSubmit = (e) => {
     if (!(username == "username" || username == "")) {
@@ -189,15 +254,10 @@ function Input({ msg, setMsg }) {
         onChange={(e) => setMsg(e.target.value)}
         placeholder="Message"
       ></input>
-      <AnyElem name="div"></AnyElem>
     </div>
   );
 }
 
 function Title() {
   return <div class="title">MDHCHT</div>;
-}
-
-function AnyElem({ id, className, name }) {
-  return React.createElement(name);
 }
