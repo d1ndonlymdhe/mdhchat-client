@@ -2,15 +2,16 @@ import React, { useState, useRef, useReducer, useEffect } from "react";
 import "./App.css";
 import io from "socket.io-client";
 
-const server = "192.168.100.23:4000";
-const socket = io(`http://localhost:4000`);
+const server = "https://mdhchat.herokuapp.com";
+const socket = io(`https://mdhchat.herokuapp.com`);
+console.log(socket);
 
 export default function App() {
   const [username, setUserName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [roomCreated, setRoomCreated] = useState(false);
   const [roomJoined, setRoomJoined] = useState(false);
-  const [toast, setToast] = useState(true);
+  const [toast, setToast] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
@@ -25,10 +26,10 @@ export default function App() {
       setRoomCode(roomCode);
     });
     socket.on("newUser", (res) => {
-      setToast(false);
+      setToast(true);
       setTimeout(() => {
-        setToast(true);
-      }, 100);
+        setToast(false);
+      }, 5000);
       if (username === res.username) {
         setToastMsg(`You Joined`);
       } else {
@@ -41,7 +42,7 @@ export default function App() {
   if (roomCreated || roomJoined) {
     return (
       <>
-        {toast || <Toast msg={toastMsg} toast={toast}></Toast>}
+        {!toast || <Toast msg={toastMsg} setToast={setToast}></Toast>}
         <div id="chat">
           <Title></Title>
           <Chat socket={socket} username={username} roomCode={roomCode}></Chat>
@@ -51,7 +52,7 @@ export default function App() {
   }
   return (
     <>
-      {toast || <Toast msg={toastMsg} toast={toast}></Toast>}
+      {!toast || <Toast msg={toastMsg} setToast={setToast}></Toast>}
       <StartPage
         socket={socket}
         username={username}
@@ -62,42 +63,6 @@ export default function App() {
     </>
   );
 }
-
-// function SignUp() {
-//   const usernameInput = useRef(null);
-//   const passwordInput = useRef(null);
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     const username = usernameInput.current.value;
-//     const password = passwordInput.current.value;
-//     fetch(`http://${server}/signup?u=${username}`).then((res) => {
-//       console.log(res);
-//     });
-//   };
-//   return (
-//     <>
-//       <form onSubmit={handleSubmit}>
-//         <label htmlFor="username">Username:</label>
-//         <input
-//           name="username"
-//           type="text"
-//           autoComplete="off"
-//           ref={usernameInput}
-//         ></input>
-//         <br />
-//         <label htmlFor="password">Password:</label>
-//         <input
-//           name="password"
-//           type="password"
-//           autoComplete="off"
-//           ref={passwordInput}
-//         ></input>
-//         <br />
-//         <button type="submit">submit</button>
-//       </form>
-//     </>
-//   );
-// }
 
 function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
   const handleSubmit = (e) => {
@@ -175,9 +140,7 @@ function Chat({ socket, roomCode, username }) {
   const [messages, setMessages] = useState([
     { from: username, msg: `${string}` },
   ]);
-  // useEffect(() => {
-  //   setMessages([]);
-  // }, []);
+
   const [msg, setMsg] = useState("");
   useEffect(() => {
     socket.on("msg", (res) => {
@@ -252,6 +215,15 @@ function Title() {
   return <div class="title">MDHCHT</div>;
 }
 
-function Toast({ msg, toast }) {
-  return <div className="toast">{msg}</div>;
+function Toast({ msg, setToast }) {
+  return (
+    <div
+      className="toast"
+      onClick={() => {
+        setToast(false);
+      }}
+    >
+      {msg}
+    </div>
+  );
 }

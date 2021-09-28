@@ -91,3 +91,14 @@ button {
   border-radius: 0.25em;
   color: black;
 }
+
+.toast {
+  position: absolute;
+  bottom: 5px;
+  left: 45%;
+  width: 10vw;
+  background: gray;
+  padding: 10px;
+  border-radius: 0.5em;
+  text-align: center;
+}
