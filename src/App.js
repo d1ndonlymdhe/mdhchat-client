@@ -1,9 +1,9 @@
-import React, { useState, useRef, useReducer, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import io from "socket.io-client";
 
 const server = "https://mdhchat.herokuapp.com";
-const socket = io(`https://mdhchat.herokuapp.com`);
+const socket = io(server);
 console.log(socket);
 
 export default function App() {
@@ -45,6 +45,7 @@ export default function App() {
         {!toast || <Toast msg={toastMsg} setToast={setToast}></Toast>}
         <div id="chat">
           <Title></Title>
+          <div>{`Room Code : ${roomCode}`}</div>
           <Chat socket={socket} username={username} roomCode={roomCode}></Chat>
         </div>
       </>
@@ -137,11 +138,10 @@ function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
 function Chat({ socket, roomCode, username }) {
   const string = `room code = ${roomCode}`;
   console.log(roomCode);
-  const [messages, setMessages] = useState([
-    { from: username, msg: `${string}` },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const [msg, setMsg] = useState("");
+
   useEffect(() => {
     socket.on("msg", (res) => {
       const { username, msg } = res;

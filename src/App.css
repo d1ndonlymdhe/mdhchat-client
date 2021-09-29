@@ -19,7 +19,7 @@ body {
   /* flex-direction: column; */
   background: black;
   /* text-overflow: ellipsis; */
-  grid-template-rows: 15% 70% 15%;
+  grid-template-rows: 15% 5% 65% 15%;
   justify-items: center;
 }
 #messages {
