@@ -47,10 +47,17 @@ export default function App() {
 function StartPage({}) {
   const [login, setLogin] = useState(false);
   const [signUp, setSignUp] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
+  if (loggedIn) {
+    return <Main username={username}></Main>;
+  }
   return (
     <>
-      {/* {login || <Login></Login>} */}
-      {!signUp || <SignUp></SignUp>}
+      {!login || (
+        <Login setLoggedIn={setLoggedIn} setUserName={setUsername}></Login>
+      )}
+      {!signUp || <SignUp setSignUp={setSignUp} setLogin={setLogin}></SignUp>}
       <Title></Title>
       <button
         onClick={() => {
@@ -73,19 +80,31 @@ function StartPage({}) {
   );
 }
 
-function SignUp() {
+function Main({ username }) {
+  return <div>Main App</div>;
+}
+
+function Login({ setLoggedIn, setUserName }) {
   const usernameInput = useRef(null);
   const passwordInput = useRef(null);
   const handleSubmit = (e) => {
     e.preventDefault();
     const username = usernameInput.current.value;
     const password = passwordInput.current.value;
-    fetch(`http://${server}/signup?u=${username}`).then((res) => {
-      console.log(res);
-    });
+    fetch(`http://${server}/login?u=${username}&p=${password}`)
+      .then((data) => {
+        return data.json();
+      })
+      .then((res) => {
+        if (res.status == "ok") {
+          setUserName(username);
+          setLoggedIn(true);
+        }
+      });
   };
   return (
     <>
+      <div>LOGIN</div>
       <form onSubmit={handleSubmit}>
         <label htmlFor="username">Username:</label>
         <input
@@ -109,75 +128,49 @@ function SignUp() {
   );
 }
 
-// function StartPage({ socket, username, setUserName, roomCode, setRoomCode }) {
-//   const handleSubmit = (e) => {
-//     if (!(username == "username" || username == "")) {
-//       e.preventDefault();
-//       if (roomCode == 0 || roomCode == "") {
-//         socket.emit("create", username);
-//       } else {
-//         console.log("join signal sent");
-//         socket.emit("join", username, roomCode);
-//       }
-//     }
-//   };
-//   const isString = (str) => {
-//     if (str.length > 4) {
-//       return true;
-//     }
-//     const strArr = str.split("");
-//     for (let i = 0; i < str.length; i++) {
-//       if (
-//         !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(strArr[i])
-//       ) {
-//         return true;
-//       }
-//     }
-//     return false;
-//   };
-//   return (
-//     <div id="mainContainer">
-//       <Title></Title>
-//       <br />
-//       <div className="form">
-//         <form onSubmit={handleSubmit} id="inputForm">
-//           <input
-//             type="text"
-//             id="usernameInput"
-//             autoComplete="off"
-//             className="input"
-//             placeholder="Username"
-//             value={username}
-//             onChange={(e) => {
-//               setUserName(e.target.value);
-//             }}
-//             onFocus={(e) => {
-//               e.target.value = "";
-//             }}
-//           />
-//           <br />
-//           <input
-//             type="text"
-//             id="roomCodeInput"
-//             className="input"
-//             autoComplete="off"
-//             value={roomCode}
-//             placeholder="Room Code"
-//             onChange={(e) => {
-//               if (isString(e.target.value)) {
-//                 return false;
-//               }
-//               setRoomCode(e.target.value);
-//             }}
-//             onFocus={(e) => (e.target.value = "")}
-//           />
-//           <br />
-//           <button type="submit">Submit</button>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// }
+function SignUp({ setSignUp, setLogin }) {
+  const usernameInput = useRef(null);
+  const passwordInput = useRef(null);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const username = usernameInput.current.value;
+    const password = passwordInput.current.value;
+    fetch(`http://${server}/signup?u=${username}&p=${password}`)
+      .then((data) => {
+        return data.json();
+      })
+      .then((res) => {
+        if (res.status == "ok") {
+          setLogin(true);
+          setSignUp(false);
+        }
+      });
+  };
+  return (
+    <>
+      <div>Signup</div>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="username">Username:</label>
+        <input
+          name="username"
+          type="text"
+          autoComplete="off"
+          ref={usernameInput}
+        ></input>
+        <br />
+        <label htmlFor="password">Password:</label>
+        <input
+          name="password"
+          type="password"
+          autoComplete="off"
+          ref={passwordInput}
+        ></input>
+        <br />
+        <button type="submit">submit</button>
+      </form>
+    </>
+  );
+}
 
 function Chat({ socket, roomCode, username }) {
   const string = `room code = ${roomCode}`;
@@ -185,9 +178,7 @@ function Chat({ socket, roomCode, username }) {
   const [messages, setMessages] = useState([
     { from: username, msg: `${string}` },
   ]);
-  // useEffect(() => {
-  //   setMessages([]);
-  // }, []);
+
   const [msg, setMsg] = useState("");
   useEffect(() => {
     socket.on("msg", (res) => {
