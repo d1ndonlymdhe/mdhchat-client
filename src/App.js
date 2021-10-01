@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 import io from "socket.io-client";
 
-const server = "http://localhost:4000";
+const server = "https://mdhchat.herokuapp.com";
 const socket = io(server);
 export default function App() {
   const [username, setUsername] = useState("");
