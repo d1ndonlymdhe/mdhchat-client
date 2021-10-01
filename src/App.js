@@ -1,87 +1,218 @@
-import React, { useState, useRef, useReducer, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 import io from "socket.io-client";
 
-const server = "192.168.100.23:4000";
-const socket = io(`http://localhost:4000`);
-
+const server = "http://localhost:4000";
+const socket = io(server);
 export default function App() {
-  const [username, setUserName] = useState("");
+  const [username, setUsername] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [roomCreated, setRoomCreated] = useState(false);
   const [roomJoined, setRoomJoined] = useState(false);
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
-      setRoomCreated(true);
+      // setRoomCreated(true);
       setRoomJoined(false);
       setRoomCode(roomCode);
     });
     socket.on("roomJoined", (username, roomCode) => {
       console.log("joined");
-      setRoomCreated(false);
+      // setRoomCreated(false);
       setRoomJoined(true);
       setRoomCode(roomCode);
     });
     socket.on("error", (msg) => console.log(msg));
   }, [socket]);
 
-  if (roomCreated || roomJoined) {
+  if (roomJoined) {
     return (
       <div id="chat">
         <Title></Title>
-        <Chat socket={socket} username={username} roomCode={roomCode}></Chat>
+        <Chat
+          socket={socket}
+          username={username}
+          roomCode={roomCode}
+          setRoomCode={setRoomCode}
+        ></Chat>
       </div>
     );
   }
   return (
     <StartPage
-      socket={socket}
+      // socket={socket}
       username={username}
-      setUserName={setUserName}
+      setUsername={setUsername}
       roomCode={roomCode}
       setRoomCode={setRoomCode}
+      setRoomJoined={setRoomJoined}
     ></StartPage>
   );
 }
 
-function StartPage({}) {
+function StartPage({ setRoomJoined, setRoomCode, setUsername, username }) {
   const [login, setLogin] = useState(false);
   const [signUp, setSignUp] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
+  // const [username, setUsername] = useState("");
+  const overlayRef = useRef(null);
+
   if (loggedIn) {
-    return <Main username={username}></Main>;
+    return (
+      <Main
+        username={username}
+        setRoomJoined={setRoomJoined}
+        setRoomCode={setRoomCode}
+      ></Main>
+    );
   }
   return (
-    <>
+    <div id="mainContainer">
       {!login || (
-        <Login setLoggedIn={setLoggedIn} setUserName={setUsername}></Login>
+        <div
+          className="overlay"
+          onClick={(e) => {
+            if (e.target === overlayRef.current) {
+              setLogin(false);
+            }
+          }}
+          ref={overlayRef}
+        >
+          <Login setLoggedIn={setLoggedIn} setUserName={setUsername}></Login>
+        </div>
       )}
-      {!signUp || <SignUp setSignUp={setSignUp} setLogin={setLogin}></SignUp>}
+      {!signUp || (
+        <div
+          className="overlay"
+          onClick={(e) => {
+            if (e.target === overlayRef.current) {
+              setSignUp(false);
+            }
+          }}
+          ref={overlayRef}
+        >
+          <SignUp setSignUp={setSignUp} setLogin={setLogin}></SignUp>
+        </div>
+      )}
       <Title></Title>
-      <button
-        onClick={() => {
-          setLogin(true);
-          setSignUp(false);
-        }}
-      >
-        LOGIN
-      </button>
-      <br />
-      <button
-        onClick={() => {
-          setSignUp(true);
-          setLogin(false);
-        }}
-      >
-        SIGN UP
-      </button>
-    </>
+      <div id="buttons">
+        <button
+          onClick={() => {
+            setLogin(true);
+            setSignUp(false);
+          }}
+        >
+          LOGIN
+        </button>
+        <br />
+        <button
+          onClick={() => {
+            setSignUp(true);
+            setLogin(false);
+          }}
+        >
+          SIGN UP
+        </button>
+      </div>
+    </div>
   );
 }
 
-function Main({ username }) {
-  return <div>Main App</div>;
+function Main({ username, setRoomJoined, setRoomCode }) {
+  const [join, setJoin] = useState(false);
+  const createRoom = () => {
+    socket.emit("create", username);
+  };
+  useEffect(() => {
+    socket.on("roomCreated", (username, code) => {
+      joinRoom(code);
+    });
+  });
+  const joinRoom = (code) => {
+    // fetch(`${server}/joinRoom?u=${username}&code=${code}`)
+    //   .then((data) => {
+    //     return data.json();
+    //   })
+    //   .then((res) => {
+    //     if (res.status === "ok") {
+    //       setRoomJoined(true);
+    //     }
+    //   });
+    console.log(username, code);
+    socket.emit("join", username, code.toString());
+  };
+  const handleJoinRoom = () => {
+    setJoin(true);
+  };
+  return (
+    <div id="mainContainer">
+      {!join || (
+        <EnterRoomCode
+          setJoin={setJoin}
+          setRoomCode={setRoomCode}
+          joinRoom={joinRoom}
+        ></EnterRoomCode>
+      )}
+      <Title></Title>
+      <div id="buttons">
+        <button onClick={handleJoinRoom}>Join Room</button>
+        <button onClick={createRoom}>Create Room</button>
+      </div>
+    </div>
+  );
+}
+
+function EnterRoomCode({ setJoin, setRoomCode, joinRoom }) {
+  const [code, setCode] = useState("");
+  const overlayRef = useRef(null);
+  const isString = (str) => {
+    if (str.length > 4) {
+      return true;
+    }
+    const strArr = str.split("");
+    for (let i = 0; i < str.length; i++) {
+      if (
+        !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(strArr[i])
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+  return (
+    <div
+      className="overlay"
+      onClick={(e) => {
+        if (e.target === overlayRef.current) {
+          setJoin(false);
+        }
+      }}
+      ref={overlayRef}
+    >
+      <div>
+        <div>Room Code</div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setJoin(false);
+            setRoomCode(code);
+            joinRoom(code);
+          }}
+        >
+          {/* <label htmlFor="roomCode">Room Code</label> */}
+          <input
+            type="text"
+            name="roomCode"
+            value={code}
+            onChange={(e) => {
+              if (!isString(e.target.value)) {
+                setCode(e.target.value);
+              }
+            }}
+          />
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function Login({ setLoggedIn, setUserName }) {
@@ -91,22 +222,23 @@ function Login({ setLoggedIn, setUserName }) {
     e.preventDefault();
     const username = usernameInput.current.value;
     const password = passwordInput.current.value;
-    fetch(`http://${server}/login?u=${username}&p=${password}`)
+    fetch(`${server}/login?u=${username}&p=${password}`)
       .then((data) => {
         return data.json();
       })
       .then((res) => {
-        if (res.status == "ok") {
+        if (res.status === "ok") {
           setUserName(username);
           setLoggedIn(true);
         }
       });
   };
   return (
-    <>
+    <div>
       <div>LOGIN</div>
       <form onSubmit={handleSubmit}>
         <label htmlFor="username">Username:</label>
+        <br />
         <input
           name="username"
           type="text"
@@ -115,6 +247,7 @@ function Login({ setLoggedIn, setUserName }) {
         ></input>
         <br />
         <label htmlFor="password">Password:</label>
+        <br />
         <input
           name="password"
           type="password"
@@ -124,7 +257,7 @@ function Login({ setLoggedIn, setUserName }) {
         <br />
         <button type="submit">submit</button>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -135,22 +268,23 @@ function SignUp({ setSignUp, setLogin }) {
     e.preventDefault();
     const username = usernameInput.current.value;
     const password = passwordInput.current.value;
-    fetch(`http://${server}/signup?u=${username}&p=${password}`)
+    fetch(`${server}/signup?u=${username}&p=${password}`)
       .then((data) => {
         return data.json();
       })
       .then((res) => {
-        if (res.status == "ok") {
+        if (res.status === "ok") {
           setLogin(true);
           setSignUp(false);
         }
       });
   };
   return (
-    <>
+    <div>
       <div>Signup</div>
       <form onSubmit={handleSubmit}>
         <label htmlFor="username">Username:</label>
+        <br />
         <input
           name="username"
           type="text"
@@ -159,6 +293,7 @@ function SignUp({ setSignUp, setLogin }) {
         ></input>
         <br />
         <label htmlFor="password">Password:</label>
+        <br />
         <input
           name="password"
           type="password"
@@ -168,7 +303,7 @@ function SignUp({ setSignUp, setLogin }) {
         <br />
         <button type="submit">submit</button>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -189,10 +324,10 @@ function Chat({ socket, roomCode, username }) {
       setMessages([...tempArr]);
       console.log(messages);
     });
-  }, [socket]);
+  }, [socket, messages]);
   const sendMsg = (e) => {
     e.preventDefault();
-    if (msg != "") {
+    if (msg !== "") {
       console.log("sent", username, msg);
       socket.emit("msg", roomCode, msg, username);
     }
@@ -222,7 +357,7 @@ function Message({ messages, username }) {
     <div id="messages">
       {messages.map((message, index) => {
         let sender = "";
-        if (message.from == username) {
+        if (message.from === username) {
           sender = "You";
         } else {
           sender = message.from;

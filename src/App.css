@@ -83,6 +83,46 @@ body {
   font-size: 100%;
 }
 
+#buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+#buttons > * {
+  margin: 5px;
+  width: 100%;
+}
+
+.overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(10px);
+}
+.overlay > div {
+  border: 5px yellow solid;
+  border-radius: 0.5em;
+  background-color: crimson;
+  /* border: 5px yellow; */
+  position: relative;
+  text-align: center;
+  /* left: 50%; */
+  top: 50;
+  width: 20vw;
+}
+.overlay > div * {
+  margin: 5px;
+}
+
+.overlay div input {
+  width: 15vw;
+}
+
 button {
   background-color: yellow;
   height: 7vh;
