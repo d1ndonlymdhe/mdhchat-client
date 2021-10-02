@@ -2,23 +2,28 @@ import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 import io from "socket.io-client";
 
-const server = "https://mdhchat.herokuapp.com";
+const server = "http://localhost:4000";
 const socket = io(server);
 export default function App() {
   const [username, setUsername] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [roomJoined, setRoomJoined] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [viewUsers, setViewUsers] = useState(false);
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
-      // setRoomCreated(true);
       setRoomJoined(false);
       setRoomCode(roomCode);
     });
     socket.on("roomJoined", (username, roomCode) => {
       console.log("joined");
-      // setRoomCreated(false);
       setRoomJoined(true);
       setRoomCode(roomCode);
+    });
+    socket.on("newUser", ({ username }) => {
+      let temp = users;
+      temp.push(username);
+      setUsers(temp);
     });
     socket.on("error", (msg) => console.log(msg));
   }, [socket]);
@@ -26,6 +31,7 @@ export default function App() {
   if (roomJoined) {
     return (
       <div id="chat">
+        {!viewUsers || <showUsers></showUsers>}
         <Title></Title>
         <Chat
           socket={socket}
@@ -127,15 +133,6 @@ function Main({ username, setRoomJoined, setRoomCode }) {
     });
   });
   const joinRoom = (code) => {
-    // fetch(`${server}/joinRoom?u=${username}&code=${code}`)
-    //   .then((data) => {
-    //     return data.json();
-    //   })
-    //   .then((res) => {
-    //     if (res.status === "ok") {
-    //       setRoomJoined(true);
-    //     }
-    //   });
     console.log(username, code);
     socket.emit("join", username, code.toString());
   };
@@ -210,6 +207,18 @@ function EnterRoomCode({ setJoin, setRoomCode, joinRoom }) {
           />
           <button type="submit">Submit</button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function showUsers({ users }) {
+  return (
+    <div id="overlay">
+      <div>
+        {users.map((user) => {
+          return <div>{user}</div>;
+        })}
       </div>
     </div>
   );
@@ -324,7 +333,7 @@ function Chat({ socket, roomCode, username }) {
       setMessages([...tempArr]);
       console.log(messages);
     });
-  }, [socket, messages]);
+  }, [socket]);
   const sendMsg = (e) => {
     e.preventDefault();
     if (msg !== "") {
