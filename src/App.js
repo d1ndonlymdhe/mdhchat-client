@@ -9,6 +9,8 @@ export default function App() {
   const [roomCode, setRoomCode] = useState("");
   const [roomJoined, setRoomJoined] = useState(false);
   const [users, setUsers] = useState([]);
+  const [loggedIn, setLoggedIn] = useState(false);
+
   const [viewUsers, setViewUsers] = useState(false);
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
@@ -42,24 +44,6 @@ export default function App() {
       </div>
     );
   }
-  return (
-    <StartPage
-      // socket={socket}
-      username={username}
-      setUsername={setUsername}
-      roomCode={roomCode}
-      setRoomCode={setRoomCode}
-      setRoomJoined={setRoomJoined}
-    ></StartPage>
-  );
-}
-
-function StartPage({ setRoomJoined, setRoomCode, setUsername, username }) {
-  const [login, setLogin] = useState(false);
-  const [signUp, setSignUp] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  // const [username, setUsername] = useState("");
-  const overlayRef = useRef(null);
 
   if (loggedIn) {
     return (
@@ -70,6 +54,31 @@ function StartPage({ setRoomJoined, setRoomCode, setUsername, username }) {
       ></Main>
     );
   }
+  return (
+    <StartPage
+      // socket={socket}
+      username={username}
+      setUsername={setUsername}
+      roomCode={roomCode}
+      setRoomCode={setRoomCode}
+      setRoomJoined={setRoomJoined}
+      setLoggedIn={setLoggedIn}
+    ></StartPage>
+  );
+}
+
+function StartPage({
+  setRoomJoined,
+  setRoomCode,
+  setLoggedIn,
+  setUsername,
+  username,
+}) {
+  const [login, setLogin] = useState(false);
+  const [signUp, setSignUp] = useState(false);
+  // const [username, setUsername] = useState("");
+  const overlayRef = useRef(null);
+
   return (
     <div id="mainContainer">
       {!login || (
@@ -395,3 +404,4 @@ function Input({ msg, setMsg }) {
 
 function Title() {
   return <div class="title">MDHCHT</div>;
+}
