@@ -395,4 +395,3 @@ function Input({ msg, setMsg }) {
 
 function Title() {
   return <div class="title">MDHCHT</div>;
-}
