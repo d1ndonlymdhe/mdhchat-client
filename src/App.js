@@ -8,6 +8,7 @@ export default function App() {
   const [username, setUsername] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [roomJoined, setRoomJoined] = useState(false);
+  const [roomCreated, setRoomCreated] = useState(false);
   const [users, setUsers] = useState([]);
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -15,11 +16,13 @@ export default function App() {
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
       setRoomJoined(false);
+      setRoomCreated(true);
       setRoomCode(roomCode);
     });
     socket.on("roomJoined", (username, roomCode) => {
       console.log("joined");
       setRoomJoined(true);
+      setRoomCreated(false);
       setRoomCode(roomCode);
     });
     socket.on("newUser", ({ username }) => {
@@ -30,7 +33,7 @@ export default function App() {
     socket.on("error", (msg) => console.log(msg));
   }, [socket]);
 
-  if (roomJoined) {
+  if (roomJoined || roomCreated) {
     return (
       <div id="chat">
         {!viewUsers || <showUsers></showUsers>}
@@ -136,11 +139,6 @@ function Main({ username, setRoomJoined, setRoomCode }) {
   const createRoom = () => {
     socket.emit("create", username);
   };
-  useEffect(() => {
-    socket.on("roomCreated", (username, code) => {
-      joinRoom(code);
-    });
-  });
   const joinRoom = (code) => {
     console.log(username, code);
     socket.emit("join", username, code.toString());
