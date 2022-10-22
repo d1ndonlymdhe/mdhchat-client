@@ -15,12 +15,15 @@ body {
 #chat {
   width: clamp(0px, 500px, 100vw);
   height: 100vh;
-  display: grid;
-  /* flex-direction: column; */
+  /* display: grid; */
+  display: flex;
+  flex-direction: column;
   background: black;
   /* text-overflow: ellipsis; */
   grid-template-rows: 15% 70% 15%;
   justify-items: center;
+  justify-content: space-around;
+  align-items: center;
 }
 #messages {
   width: 90%;
@@ -29,6 +32,7 @@ body {
   border-radius: 0.5em;
   overflow-y: auto;
   scrollbar-width: 2vw;
+  height: 100vh;
 }
 
 #messages div {
@@ -46,7 +50,8 @@ body {
 }
 .title {
   color: yellow;
-  font-size: 300%;
+  font-size: 200%;
+  user-select: none;
 }
 
 #inputForm {
@@ -130,4 +135,13 @@ button {
   font-size: clamp(0px, 5.5vh, 30px);
   border-radius: 0.25em;
   color: black;
+  user-select: none;
+}
+
+.noselect {
+  user-select: none;
+}
+
+#sidebarChildren {
+  width: 60%;
 }

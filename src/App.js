@@ -9,35 +9,28 @@ export default function App() {
   const [roomCode, setRoomCode] = useState("");
   const [roomJoined, setRoomJoined] = useState(false);
   const [roomCreated, setRoomCreated] = useState(false);
-  const [users, setUsers] = useState([]);
   const [loggedIn, setLoggedIn] = useState(false);
-
-  const [viewUsers, setViewUsers] = useState(false);
+  // const [toast,setToast] = useState("")
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
+      setRoomCode(roomCode);
       setRoomJoined(false);
       setRoomCreated(true);
-      setRoomCode(roomCode);
     });
     socket.on("roomJoined", (username, roomCode) => {
       console.log("joined");
+      setRoomCode(roomCode);
       setRoomJoined(true);
       setRoomCreated(false);
-      setRoomCode(roomCode);
+      console.log(roomCode)
     });
-    socket.on("newUser", ({ username }) => {
-      let temp = users;
-      temp.push(username);
-      setUsers(temp);
-    });
+
     socket.on("error", (msg) => console.log(msg));
   }, [socket]);
 
   if (roomJoined || roomCreated) {
     return (
       <div id="chat">
-        {!viewUsers || <showUsers></showUsers>}
-        <Title></Title>
         <Chat
           socket={socket}
           username={username}
@@ -58,15 +51,16 @@ export default function App() {
     );
   }
   return (
-    <StartPage
-      // socket={socket}
-      username={username}
-      setUsername={setUsername}
-      roomCode={roomCode}
-      setRoomCode={setRoomCode}
-      setRoomJoined={setRoomJoined}
-      setLoggedIn={setLoggedIn}
-    ></StartPage>
+    <>
+      <StartPage
+        username={username}
+        setUsername={setUsername}
+        roomCode={roomCode}
+        setRoomCode={setRoomCode}
+        setRoomJoined={setRoomJoined}
+        setLoggedIn={setLoggedIn}
+      ></StartPage>
+    </>
   );
 }
 
@@ -79,7 +73,6 @@ function StartPage({
 }) {
   const [login, setLogin] = useState(false);
   const [signUp, setSignUp] = useState(false);
-  // const [username, setUsername] = useState("");
   const overlayRef = useRef(null);
 
   return (
@@ -219,18 +212,6 @@ function EnterRoomCode({ setJoin, setRoomCode, joinRoom }) {
   );
 }
 
-function showUsers({ users }) {
-  return (
-    <div id="overlay">
-      <div>
-        {users.map((user) => {
-          return <div>{user}</div>;
-        })}
-      </div>
-    </div>
-  );
-}
-
 function Login({ setLoggedIn, setUserName }) {
   const usernameInput = useRef(null);
   const passwordInput = useRef(null);
@@ -324,10 +305,18 @@ function SignUp({ setSignUp, setLogin }) {
 }
 
 function Chat({ socket, roomCode, username }) {
+  const [showUsers, setShowUsers] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [abcd, setAbcd] = useState("")
+  const [roomCode2, setRoomCode2] = useState(roomCode)
   const string = `room code = ${roomCode}`;
-  console.log(roomCode);
+  console.log(roomCode)
+  useEffect(() => {
+    setRoomCode2(roomCode)
+  }, [])
+  //abcd
   const [messages, setMessages] = useState([
-    { from: username, msg: `${string}` },
+    { from: username, msg: `room code = ${roomCode2}` },
   ]);
 
   const [msg, setMsg] = useState("");
@@ -340,6 +329,9 @@ function Chat({ socket, roomCode, username }) {
       setMessages([...tempArr]);
       console.log(messages);
     });
+    socket.on("updateUsers", (res) => {
+      console.log(res);
+    });
   }, [socket]);
   const sendMsg = (e) => {
     e.preventDefault();
@@ -350,8 +342,31 @@ function Chat({ socket, roomCode, username }) {
     setMsg("");
   };
 
+  const SideBarChildren = () => {
+    const showUsers = () => {
+      setShowUsers(true);
+    };
+    const leaveRoom = () => {
+      console.log("I haven't programmed that path yet.(leave room)");
+    };
+    return (
+      <div>
+        <button onClick={showUsers}>Show Users</button>
+        <button onClick={leaveRoom}>Leave Room</button>
+      </div>
+    );
+  };
+
   return (
     <>
+      {!showUsers || <ShowUsers users={users}></ShowUsers>}
+      <Sidebar
+        color="white"
+        Children={
+          <SideBarChildren setShowUsers={setShowUsers}></SideBarChildren>
+        }
+      ></Sidebar>
+      <Title></Title>
       <Message messages={messages} username={username}></Message>
       <form onSubmit={sendMsg}>
         <Input msg={msg} setMsg={setMsg}></Input>
@@ -364,6 +379,35 @@ function Chat({ socket, roomCode, username }) {
           Send
         </button>
       </form>
+    </>
+  );
+}
+function ShowUsers({ users }) {
+  return (
+    <div id="overlay">
+      <div>
+        {users.map((user) => {
+          return <div>{user}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+function Sidebar({ color, Children }) {
+  const [showChildren, setShowChildren] = useState(false);
+  const clickHandler = () => {
+    setShowChildren(!showChildren);
+  };
+  return (
+    <>
+      <div onClick={clickHandler}>
+        <svg xmlns="http://www.w3.org/2000/svg" height="30" width="50">
+          <rect width="40" height="5" x="5" y="0" fill={color} />
+          <rect width="40" height="5" x="5" y="10" fill={color} />
+          <rect width="40" height="5" x="5" y="20" fill={color} />
+        </svg>
+      </div>
+      {!showChildren || <div id="sidebarChildren">{Children}</div>}
     </>
   );
 }
@@ -401,5 +445,5 @@ function Input({ msg, setMsg }) {
 }
 
 function Title() {
-  return <div class="title">MDHCHT</div>;
+  return <div className="title">MDHCHT</div>;
 }
