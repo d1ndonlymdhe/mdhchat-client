@@ -1,32 +1,68 @@
-import React, { useState, useRef, useEffect } from "react";
-import "./App.css";
+import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
+import {
+  AESDecrypt,
+  AESEncrypt,
+  base64ToBigint,
+  base64ToUint8Array,
+  bigintToBase64,
+  ImportAESKey,
+  RSA,
+  uint8ArrayToBase64,
+} from "./AES";
+import "./App.css";
 
-const server = "https://mdhchat.herokuapp.com";
+import { InitializeSessionReceiver, InitializeSessionSender } from "./test.js";
+
+const E = 65537n;
+
+const server = "http://localhost:4000";
 const socket = io(server);
+
 export default function App() {
   const [username, setUsername] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [roomJoined, setRoomJoined] = useState(false);
   const [roomCreated, setRoomCreated] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  // const [toast,setToast] = useState("")
+  const [roomKey, setRoomKey] = useState(null);
+
+  // useEffect(() => {
+  //   console.log("Starting test");
+  //   main().then(() => {
+  //     console.log("Test complete");
+  //   });
+  // }, []);
+
   useEffect(() => {
     socket.on("roomCreated", (username, roomCode) => {
       setRoomCode(roomCode);
       setRoomJoined(false);
       setRoomCreated(true);
     });
-    socket.on("roomJoined", (username, roomCode) => {
-      console.log("joined");
-      setRoomCode(roomCode);
-      setRoomJoined(true);
-      setRoomCreated(false);
-      console.log(roomCode)
-    });
+    socket.on(
+      "roomJoined",
+      async (username, roomCode, base64_encryptedAESKey) => {
+        console.log("joined");
+        setRoomCode(roomCode);
+        setRoomJoined(true);
+        setRoomCreated(false);
 
+        const n = base64ToBigint(localStorage.getItem("n"));
+        const d = base64ToBigint(localStorage.getItem("d"));
+        console.log("Received base64_encryptedAESKey", base64_encryptedAESKey);
+        const decryptedAESKey = await InitializeSessionReceiver(base64_encryptedAESKey, {
+          private_key: [n, d],
+        })
+        console.log("Decrypted AES Key", decryptedAESKey);
+        const aesKey = await ImportAESKey(decryptedAESKey);
+        console.log("Received AES Key", aesKey);
+        setRoomKey(aesKey);
+        console.log(roomCode);
+      }
+    );
     socket.on("error", (msg) => console.log(msg));
-  }, [socket]);
+  }, []);
 
   if (roomJoined || roomCreated) {
     return (
@@ -36,6 +72,7 @@ export default function App() {
           username={username}
           roomCode={roomCode}
           setRoomCode={setRoomCode}
+          roomKey={roomKey}
         ></Chat>
       </div>
     );
@@ -47,6 +84,7 @@ export default function App() {
         username={username}
         setRoomJoined={setRoomJoined}
         setRoomCode={setRoomCode}
+        setRoomKey={setRoomKey}
       ></Main>
     );
   }
@@ -127,10 +165,37 @@ function StartPage({
   );
 }
 
-function Main({ username, setRoomJoined, setRoomCode }) {
+function Main({ username, setRoomJoined, setRoomCode, setRoomKey }) {
   const [join, setJoin] = useState(false);
-  const createRoom = () => {
-    socket.emit("create", username);
+  const [guestName, setGuestName] = useState("");
+
+  useEffect(() => {
+    const n = base64ToBigint(localStorage.getItem("n"));
+    const d = base64ToBigint(localStorage.getItem("d"));
+    console.log("KEYS")
+    console.log("n", n);
+    console.log("d", d);
+  },[])
+
+  const createRoom = async (guestName) => {
+    const res = await fetch(`${server}/pub_key?u=${guestName}`);
+    const data = await res.json();
+
+    const enc_n = data.pub_key;
+    console.log("enc n");
+    console.log(enc_n);
+    const n = base64ToBigint(enc_n);
+    const e = E;
+
+    console.log("Pub Key used for encryption", n);
+
+    const [b64_aes_key, aes_key] = await InitializeSessionSender({
+      public_key: [n, e],
+    });
+
+    setRoomKey(aes_key);
+    console.log("SENT base64 = ", b64_aes_key);
+    socket.emit("create", username, guestName, b64_aes_key);
   };
   const joinRoom = (code) => {
     console.log(username, code);
@@ -151,7 +216,20 @@ function Main({ username, setRoomJoined, setRoomCode }) {
       <Title></Title>
       <div id="buttons">
         <button onClick={handleJoinRoom}>Join Room</button>
-        <button onClick={createRoom}>Create Room</button>
+        <input
+          type="text"
+          placeholder="Guest Name"
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+        ></input>
+        <br />
+        <button
+          onClick={() => {
+            createRoom(guestName);
+          }}
+        >
+          Create Room
+        </button>
       </div>
     </div>
   );
@@ -265,7 +343,12 @@ function SignUp({ setSignUp, setLogin }) {
     e.preventDefault();
     const username = usernameInput.current.value;
     const password = passwordInput.current.value;
-    fetch(`${server}/signup?u=${username}&p=${password}`)
+
+    const keys = RSA();
+    const b64_d = bigintToBase64(keys.d);
+    const b64_n = bigintToBase64(keys.n);
+    console.log("SENT pub_key", b64_n);
+    fetch(`${server}/signup?u=${username}&p=${password}&pub_key=${encodeURIComponent(b64_n)}`)
       .then((data) => {
         return data.json();
       })
@@ -273,6 +356,8 @@ function SignUp({ setSignUp, setLogin }) {
         if (res.status === "ok") {
           setLogin(true);
           setSignUp(false);
+          localStorage.setItem("n", b64_n);
+          localStorage.setItem("d", b64_d);
         }
       });
   };
@@ -304,35 +389,44 @@ function SignUp({ setSignUp, setLogin }) {
   );
 }
 
-function Chat({ socket, roomCode, username }) {
+function Chat({ socket, roomCode, username, roomKey }) {
   const [showUsers, setShowUsers] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [abcd, setAbcd] = useState("")
-  const [roomCode2, setRoomCode2] = useState(roomCode)
-  const string = `room code = ${roomCode}`;
+  const [users] = useState([]);
   console.log(roomCode);
   const [messages, setMessages] = useState([]);
 
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    socket.on("msg", (res) => {
+    socket.on("msg", async (res) => {
       const { username, msg } = res;
       console.log("recieved", username, msg);
+      const { msg: encrypted, iv } = msg;
+
+      const decryptedMsg = await AESDecrypt(
+        base64ToUint8Array(encrypted),
+        roomKey,
+        base64ToUint8Array(iv)
+      );
       const tempArr = messages;
-      tempArr.push({ from: username, msg: msg });
+      tempArr.push({ from: username, msg: decryptedMsg.decrypted });
       setMessages([...tempArr]);
       console.log(messages);
     });
     socket.on("updateUsers", (res) => {
       console.log(res);
     });
-  }, [socket]);
-  const sendMsg = (e) => {
+  }, [socket, messages, roomKey]);
+  const sendMsg = async (e) => {
     e.preventDefault();
     if (msg !== "") {
+      const { encrypted, iv } = await AESEncrypt(msg, roomKey);
+      const encryptedMsg = {
+        msg: uint8ArrayToBase64(encrypted),
+        iv: uint8ArrayToBase64(iv),
+      };
       console.log("sent", username, msg);
-      socket.emit("msg", roomCode, msg, username);
+      socket.emit("msg", roomCode, encryptedMsg, username);
     }
     setMsg("");
   };
@@ -417,7 +511,6 @@ function Message({ messages, username }) {
         } else {
           sender = message.from;
         }
-        console.log(message.msg);
         return (
           <div className="msg" key={index}>{`${sender}: ${message.msg}`}</div>
         );
